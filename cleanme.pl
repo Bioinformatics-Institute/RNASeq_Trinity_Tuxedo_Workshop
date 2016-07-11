@@ -28,7 +28,6 @@ genes.bed
 genes.gff3
 genome.fa
 runTrinityDemo.pl
-runTuxedoDemo.pl
 docs
 cummeRbund.demo.R
 );                      

@@ -59,9 +59,7 @@ my @tools = qw (Trinity
     bowtie2
     tophat2
     samtools
-    gmap_build
-    gmap
-    igv.sh
+    igv
 );
 
 {
@@ -123,17 +121,6 @@ my $run_Trinity_cmd = "Trinity --seqType fq --SS_lib_type RF "
 # Get Trinity stats:
 &process_cmd("$trinity_dir/util/TrinityStats.pl trinity_out_dir/Trinity.fasta", "$checkpoints_dir/trin_stats.ok");
 
-## run gmap
-&process_cmd("gmap_build -d genome -D . -k 13 GENOME_data/genome.fa", "$checkpoints_dir/gmap_build.ok");
-&process_cmd("gmap -n 0 -D . -d genome trinity_out_dir/Trinity.fasta -f samse > trinity_gmap.sam", "$checkpoints_dir/gmap_align.ok");
-
-## convert to bam file format
-&process_cmd("samtools view -Sb trinity_gmap.sam > trinity_gmap.bam", "$checkpoints_dir/gmap_sam_to_bam.ok");
-&process_cmd("samtools sort trinity_gmap.bam trinity_gmap", "$checkpoints_dir/gmap_sort_bam.ok");
-&process_cmd("samtools index trinity_gmap.bam", "$checkpoints_dir/gmap_index_bam.ok");
-
-
-
 ## TODO:  examine the trinity gmap alignments.
 
 
@@ -150,89 +137,14 @@ my $tophat_align_cmd = "tophat2 -I 300 -i 20 genome "
 
 # use IGV
 
-my $cmd = "igv.sh -g `pwd`/GENOME_data/genome.fa `pwd`/GENOME_data/genes.bed,`pwd`/tophat_out/accepted_hits.bam,`pwd`/trinity_gmap.bam";
+my $cmd = "igv -g GENOME_data/genome.fa GENOME_data/genes.bed,tophat_out/accepted_hits.bam";
+
 if ($AUTO_MODE) {
     $cmd .= " & ";
 }
 &process_cmd($cmd, "$checkpoints_dir/igv.view_all.ok");
 
 
-
-###################################
-## Abundance estimation using RSEM
-###################################
-
-my @rsem_result_files;
-
-foreach my $sample (sort keys %RNASEQ_DATASETS) {
-    
-    my ($left_fq, $right_fq) = @{$RNASEQ_DATASETS{$sample}};
-    
-    my $output_dir = "$sample.RSEM";
-    
-    my $rsem_result_file = "$output_dir/$sample.isoforms.results";
-    push (@rsem_result_files, $rsem_result_file);
-    
-            
-    my $align_estimate_command = "$trinity_dir/util/align_and_estimate_abundance.pl --seqType fq "
-        . " --left $left_fq --right $right_fq "
-        . " --transcripts trinity_out_dir/Trinity.fasta "
-        . " --output_prefix $sample --est_method RSEM "
-        . " --aln_method bowtie --trinity_mode --prep_reference"
-        . " --output_dir $output_dir";
-    
-    &process_cmd($align_estimate_command, "$checkpoints_dir/$sample.align_estimate.ok");
-        
-    
-    # look at the output
-    &process_cmd("head $rsem_result_file", "$checkpoints_dir/head.$sample.rsem.ok");
-    
-    
-    
-}
-
-
-## generate matrix of counts and perform TMM normalization
-&process_cmd("$trinity_dir/util/abundance_estimates_to_matrix.pl --est_method RSEM --out_prefix Trinity_trans @rsem_result_files", "$checkpoints_dir/counts_matrix.ok");
-
-## Look at the matrix
-&process_cmd("head -n20 Trinity_trans.counts.matrix", "$checkpoints_dir/head.counts.matrix.ok");
-
-## run edgeR
-&process_cmd("$trinity_dir/Analysis/DifferentialExpression/run_DE_analysis.pl --matrix Trinity_trans.counts.matrix --method edgeR --dispersion 0.1 --output edgeR", "$checkpoints_dir/run.edgeR.ok");
-
-# take a look at what edgeR generated:
-&process_cmd("ls -ltr edgeR/", "$checkpoints_dir/ls.edgeR.dir.ok");
-
-
-&process_cmd("head edgeR/Trinity_trans.counts.matrix.Sp_log_vs_Sp_plat.edgeR.DE_results", "$checkpoints_dir/head.edgeR.DE_results.ok");
-
-&show("edgeR/Trinity_trans.counts.matrix.Sp_log_vs_Sp_plat.edgeR.DE_results.MA_n_Volcano.pdf");
-
-&process_cmd("cat edgeR/Trinity_trans.counts.matrix.Sp_log_vs_Sp_plat.edgeR.DE_results | perl -lane 'if (\$F[4] =~ /\d/ && \$F[4] <= 0.05) { print;}' | wc -l", "$checkpoints_dir/count_signif_DE_trans.ok");
-
-
-eval {
-    &process_cmd("cd edgeR", "$checkpoints_dir/cd.edgeR.ok");
-};
-
-# now do it in the script. :)
-chdir("edgeR") or die "Error, could not cd to edgeR/"; 
-print STDERR "\n ** Note: if you see an error message above about not being able to cd, just ignore it... it's a weird behavior of the demo script. Rest assured we've 'cd edgeR' just fine.   :)\n\n";
-
-&process_cmd("$trinity_dir/Analysis/DifferentialExpression/analyze_diff_expr.pl --matrix ../Trinity_trans.TMM.EXPR.matrix -P 1e-3 -C 2",
-             "$checkpoints_dir/analyze_diff_expr.ok");
-
-
-&process_cmd("wc -l diffExpr.P1e-3_C2.matrix", "$checkpoints_dir/wc_diff_expr_matrix.ok"); # number of DE transcripts + 1
-
-&show("diffExpr.P1e-3_C2.matrix.log2.centered.genes_vs_samples_heatmap.pdf");
-
-&process_cmd("$trinity_dir/Analysis/DifferentialExpression/define_clusters_by_cutting_tree.pl --Ptree 60 -R diffExpr.P1e-3_C2.matrix.RData",
-    "$checkpoints_dir/cut_clusters_tree.ok");
-&show("diffExpr.P1e-3_C2.matrix.RData.clusters_fixed_P_60/my_cluster_plots.pdf");
-
-print STDERR "\n\n\tDemo complete.  Congratulations!  :)\n\n\n\n";
 
 
 exit(0);

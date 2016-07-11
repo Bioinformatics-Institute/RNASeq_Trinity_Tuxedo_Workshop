@@ -1,0 +1,22 @@
+Statistics:
+===========
+Trinity Version:      v2.2.0
+Compiler:             GCC
+Trinity Parameters:   --seqType fq --SS_lib_type RF --left /home/user/RNASeq_Trinity_Tuxedo_Workshop/RNASEQ_data/Sp_ds.left.fq.gz,/home/user/RNASeq_Trinity_Tuxedo_Workshop/RNASEQ_data/Sp_log.left.fq.gz,/home/user/RNASeq_Trinity_Tuxedo_Workshop/RNASEQ_data/Sp_hs.left.fq.gz,/home/user/RNASeq_Trinity_Tuxedo_Workshop/RNASEQ_data/Sp_plat.left.fq.gz --right /home/user/RNASeq_Trinity_Tuxedo_Workshop/RNASEQ_data/Sp_ds.right.fq.gz,/home/user/RNASeq_Trinity_Tuxedo_Workshop/RNASEQ_data/Sp_log.right.fq.gz,/home/user/RNASeq_Trinity_Tuxedo_Workshop/RNASEQ_data/Sp_hs.right.fq.gz,/home/user/RNASeq_Trinity_Tuxedo_Workshop/RNASEQ_data/Sp_plat.right.fq.gz --CPU 2 --max_memory 1G
+Paired mode
+ Input data
+  Left.fasta    0 MByte
+  Right.fasta   0 MByte
+  Number of unique KMERs: 2418804
+  Number of reads:        0 Output data
+  Trinity.fasta 0 MByte
+
+Runtime
+=======
+Start:       Mon Jul 11 21:19:32 NZST 2016
+End:         Mon Jul 11 21:19:32 NZST 2016
+Trinity   0 seconds
+  Inchworm   0 seconds
+  Chrysalis  0 seconds
+  Butterfly  0 seconds
+  Rest       0 seconds
